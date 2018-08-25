@@ -85,45 +85,57 @@ func colorPrint(state check.State, s string) {
 	fmt.Printf("%s", s)
 }
 
+type PrintConfig struct {
+	NoRemediations bool
+	NoResults      bool
+	NoSummary      bool
+}
+
 // prettyPrint outputs the results to stdout in human-readable format
-func PrettyPrint(r *check.Controls, summary check.Summary) {
-	colorPrint(check.INFO, fmt.Sprintf("%s %s\n", r.ID, r.Description))
-	for _, g := range r.Groups {
-		colorPrint(check.INFO, fmt.Sprintf("%s %s\n", g.ID, g.Description))
-		for _, c := range g.Checks {
-			colorPrint(c.State, fmt.Sprintf("%s %s\n", c.ID, c.Description))
-		}
-	}
-
-	fmt.Println()
-
-	// Print remediations.
-	if summary.Fail > 0 || summary.Warn > 0 {
-		colors[check.WARN].Printf("== Remediations ==\n")
+func PrettyPrint(r *check.Controls, summary check.Summary, cfg PrintConfig) {
+	if !cfg.NoResults {
+		colorPrint(check.INFO, fmt.Sprintf("%s %s\n", r.ID, r.Description))
 		for _, g := range r.Groups {
+			colorPrint(check.INFO, fmt.Sprintf("%s %s\n", g.ID, g.Description))
 			for _, c := range g.Checks {
-				if c.State != check.PASS {
-					fmt.Printf("%s %s\n", c.ID, c.Remediation)
-				}
+				colorPrint(c.State, fmt.Sprintf("%s %s\n", c.ID, c.Description))
 			}
 		}
+
 		fmt.Println()
 	}
 
-	// Print summary setting output color to highest severity.
-	var res check.State
-	if summary.Fail > 0 {
-		res = check.FAIL
-	} else if summary.Warn > 0 {
-		res = check.WARN
-	} else {
-		res = check.PASS
+	// Print remediations.
+	if !cfg.NoRemediations {
+		if summary.Fail > 0 || summary.Warn > 0 {
+			colors[check.WARN].Printf("== Remediations ==\n")
+			for _, g := range r.Groups {
+				for _, c := range g.Checks {
+					if c.State != check.PASS {
+						fmt.Printf("%s %s\n", c.ID, c.Remediation)
+					}
+				}
+			}
+			fmt.Println()
+		}
 	}
 
-	colors[res].Printf("== Summary ==\n")
-	fmt.Printf("%d checks PASS\n%d checks FAIL\n%d checks WARN\n",
-		summary.Pass, summary.Fail, summary.Warn,
-	)
+	// Print summary setting output color to highest severity.
+	if !cfg.NoSummary {
+		var res check.State
+		if summary.Fail > 0 {
+			res = check.FAIL
+		} else if summary.Warn > 0 {
+			res = check.WARN
+		} else {
+			res = check.PASS
+		}
+
+		colors[res].Printf("== Summary ==\n")
+		fmt.Printf("%d checks PASS\n%d checks FAIL\n%d checks WARN\n",
+			summary.Pass, summary.Fail, summary.Warn,
+		)
+	}
 }
 
 // verifyBin checks that the binary specified is running
