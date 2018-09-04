@@ -42,13 +42,13 @@ type compare struct {
 	Value string
 }
 
-type testOutput struct {
+type TestOutput struct {
 	TestResult   bool
 	ActualResult string
 }
 
-func (t *testItem) execute(s string) *testOutput {
-	result := &testOutput{TestResult: false, ActualResult: ""}
+func (t *testItem) execute(s string) *TestOutput {
+	result := &TestOutput{TestResult: false, ActualResult: ""}
 
 	match := strings.Contains(s, t.Flag)
 
@@ -136,14 +136,14 @@ type Tests struct {
 	BinOp     binOp       `yaml:"bin_op"`
 }
 
-func (ts *Tests) Execute(s string) *testOutput {
-	finalOutput := &testOutput{}
+func (ts *Tests) Execute(s string) *TestOutput {
+	finalOutput := &TestOutput{}
 	var result bool
 	if ts == nil {
 		return finalOutput
 	}
 
-	res := make([]testOutput, len(ts.TestItems))
+	res := make([]TestOutput, len(ts.TestItems))
 	if len(res) == 0 {
 		return finalOutput
 	}

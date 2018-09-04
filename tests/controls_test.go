@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package check
+package main
 
 import (
 	"testing"
+
+	"github.com/aquasecurity/bench-common/check"
 )
 
 const def = `---
@@ -42,7 +44,7 @@ groups:
       scored: true`
 
 func TestRunGroup(t *testing.T) {
-	c, err := NewControls([]byte(def))
+	c, err := check.NewControls([]byte(def))
 	if err != nil {
 		t.Fatalf("could not create control object: %s", err)
 	}
@@ -52,7 +54,7 @@ func TestRunGroup(t *testing.T) {
 
 // TODO: make this test useful as of now it never fails.
 func TestRunChecks(t *testing.T) {
-	c, err := NewControls([]byte(def))
+	c, err := check.NewControls([]byte(def))
 	if err != nil {
 		t.Fatalf("could not create control object: %s", err)
 	}
