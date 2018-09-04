@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package util
+package main
 
 import (
 	"fmt"
@@ -21,31 +21,30 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/aquasecurity/bench-common/check"
 	"github.com/fatih/color"
 	"github.com/golang/glog"
 )
 
 var (
 	// Print colors
-	colors = map[check.State]*color.Color{
-		check.PASS: color.New(color.FgGreen),
-		check.FAIL: color.New(color.FgRed),
-		check.WARN: color.New(color.FgYellow),
-		check.INFO: color.New(color.FgBlue),
+	colors = map[State]*color.Color{
+		PASS: color.New(color.FgGreen),
+		FAIL: color.New(color.FgRed),
+		WARN: color.New(color.FgYellow),
+		INFO: color.New(color.FgBlue),
 	}
 )
 
 func printlnWarn(msg string) {
 	fmt.Fprintf(os.Stderr, "[%s] %s\n",
-		colors[check.WARN].Sprintf("%s", check.WARN),
+		colors[WARN].Sprintf("%s", WARN),
 		msg,
 	)
 }
 
 func sprintlnWarn(msg string) string {
 	return fmt.Sprintf("[%s] %s",
-		colors[check.WARN].Sprintf("%s", check.WARN),
+		colors[WARN].Sprintf("%s", WARN),
 		msg,
 	)
 }
@@ -80,7 +79,7 @@ func CleanIDs(list string) []string {
 }
 
 // colorPrint outputs the state in a specific colour, along with a message string
-func colorPrint(state check.State, s string) {
+func colorPrint(state State, s string) {
 	colors[state].Printf("[%s] ", state)
 	fmt.Printf("%s", s)
 }
@@ -92,11 +91,11 @@ type PrintConfig struct {
 }
 
 // prettyPrint outputs the results to stdout in human-readable format
-func PrettyPrint(r *check.Controls, summary check.Summary, cfg PrintConfig) {
+func PrettyPrint(r *Controls, summary Summary, cfg PrintConfig) {
 	if !cfg.NoResults {
-		colorPrint(check.INFO, fmt.Sprintf("%s %s\n", r.ID, r.Description))
+		colorPrint(INFO, fmt.Sprintf("%s %s\n", r.ID, r.Description))
 		for _, g := range r.Groups {
-			colorPrint(check.INFO, fmt.Sprintf("%s %s\n", g.ID, g.Description))
+			colorPrint(INFO, fmt.Sprintf("%s %s\n", g.ID, g.Description))
 			for _, c := range g.Checks {
 				colorPrint(c.State, fmt.Sprintf("%s %s\n", c.ID, c.Description))
 			}
@@ -108,10 +107,10 @@ func PrettyPrint(r *check.Controls, summary check.Summary, cfg PrintConfig) {
 	// Print remediations.
 	if !cfg.NoRemediations {
 		if summary.Fail > 0 || summary.Warn > 0 {
-			colors[check.WARN].Printf("== Remediations ==\n")
+			colors[WARN].Printf("== Remediations ==\n")
 			for _, g := range r.Groups {
 				for _, c := range g.Checks {
-					if c.State != check.PASS {
+					if c.State != PASS {
 						fmt.Printf("%s %s\n", c.ID, c.Remediation)
 					}
 				}
@@ -122,13 +121,13 @@ func PrettyPrint(r *check.Controls, summary check.Summary, cfg PrintConfig) {
 
 	// Print summary setting output color to highest severity.
 	if !cfg.NoSummary {
-		var res check.State
+		var res State
 		if summary.Fail > 0 {
-			res = check.FAIL
+			res = FAIL
 		} else if summary.Warn > 0 {
-			res = check.WARN
+			res = WARN
 		} else {
-			res = check.PASS
+			res = PASS
 		}
 
 		colors[res].Printf("== Summary ==\n")

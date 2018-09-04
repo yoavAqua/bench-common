@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package check
+package main
 
 import (
 	"bytes"
@@ -22,7 +22,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/aquasecurity/bench-common/auditeval"
 	"github.com/golang/glog"
 )
 
@@ -49,14 +48,14 @@ func handleError(err error, context string) (errmsg string) {
 
 // Check contains information about a recommendation.
 type Check struct {
-	ID          string           `yaml:"id" json:"test_number"`
-	Description string           `json:"test_desc"`
-	Audit       string           `json:"omit"`
-	Type        string           `json:"type"`
-	Commands    []*exec.Cmd      `json:"omit"`
-	Tests       *auditeval.Tests `json:"omit"`
-	Set         bool             `json:"omit"`
-	Remediation string           `json:"remediation"`
+	ID          string      `yaml:"id" json:"test_number"`
+	Description string      `json:"test_desc"`
+	Audit       string      `json:"omit"`
+	Type        string      `json:"type"`
+	Commands    []*exec.Cmd `json:"omit"`
+	Tests       *Tests      `json:"omit"`
+	Set         bool        `json:"omit"`
+	Remediation string      `json:"remediation"`
 	State       `json:"status"`
 	ActualValue string `json:"actual_value"`
 }
