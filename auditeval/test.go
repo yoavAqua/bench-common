@@ -49,8 +49,8 @@ type TestOutput struct {
 
 func (t *testItem) execute(s string) *TestOutput {
 	result := &TestOutput{TestResult: false, ActualResult: ""}
-
 	s = strings.TrimRight(s, " \n")
+	// Set: True, checks that the flag is set
 	if t.Set {
 		if t.Compare.Op != "" {
 			flagVal := getFlagValue(s, t.Flag)
@@ -109,6 +109,7 @@ func (t *testItem) execute(s string) *TestOutput {
 			result.TestResult, _ = regexp.MatchString(t.Flag+`(?:[^a-zA-Z0-9-_]|$)`, s)
 		}
 	} else {
+		// Set: False, checks that the flag is not set
 		r, _ := regexp.MatchString(t.Flag+`(?:[^a-zA-Z0-9-_]|$)`, s)
 		result.TestResult = !r
 	}

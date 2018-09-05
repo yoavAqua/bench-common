@@ -40,14 +40,12 @@ func init() {
 	s := strings.Replace(string(in), "$user", user, -1)
 
 	controls, err = check.NewControls([]byte(s))
-	// controls, err = NewControls(MASTER, in)
 	if err != nil {
 		panic("Failed creating test controls: " + err.Error())
 	}
 }
 
 func TestTestExecute(t *testing.T) {
-
 	cases := []struct {
 		*check.Check
 		cmdStr string
