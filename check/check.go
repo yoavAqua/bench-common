@@ -49,17 +49,18 @@ func handleError(err error, context string) (errmsg string) {
 
 // Check contains information about a recommendation.
 type Check struct {
-	ID          string           `yaml:"id" json:"test_number"`
-	Description string           `json:"test_desc"`
-	Audit       string           `json:"omit"`
-	Type        string           `json:"type"`
-	Commands    []*exec.Cmd      `json:"omit"`
-	Tests       *auditeval.Tests `json:"omit"`
-	Set         bool             `json:"omit"`
-	Remediation string           `json:"-"`
-	TestInfo    []string         `json:"test_info"`
-	State       `json:"status"`
-	ActualValue string `json:"actual_value"`
+	ID                string           `yaml:"id" json:"test_number"`
+	Description       string           `json:"test_desc"`
+	Audit             string           `json:"omit"`
+	Type              string           `json:"type"`
+	Commands          []*exec.Cmd      `json:"omit"`
+	Tests             *auditeval.Tests `json:"omit"`
+	Set               bool             `json:"omit"`
+	Remediation       string           `json:"-"`
+	TestInfo          []string         `json:"test_info"`
+	State             `json:"status"`
+	ActualValue       []map[string]interface{} `json:"actual_value"`
+	FailedDescription string                   `yaml:"failed_description" json:"failed_description"`
 }
 
 // Group is a collection of similar checks.

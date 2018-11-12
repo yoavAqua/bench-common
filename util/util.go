@@ -92,6 +92,11 @@ func PrettyPrint(r *check.Controls, summary check.Summary) {
 		colorPrint(check.INFO, fmt.Sprintf("%s %s\n", g.ID, g.Description))
 		for _, c := range g.Checks {
 			colorPrint(c.State, fmt.Sprintf("%s %s\n", c.ID, c.Description))
+
+			if c.State == check.FAIL {
+				fmt.Println("\t", c.FailedDescription)
+				fmt.Println("", preetyMapPrint(c.ActualValue))
+			}
 		}
 	}
 
@@ -209,4 +214,15 @@ func multiWordReplace(s string, subname string, sub string) string {
 	}
 
 	return strings.Replace(s, subname, sub, -1)
+}
+
+func preetyMapPrint(values []map[string]interface{}) string {
+	a := ""
+	for _, value := range values{
+		for k, v := range value {
+			a += fmt.Sprintf("\t %s: %s\n", k, v)
+		}
+	}
+
+	return a
 }
