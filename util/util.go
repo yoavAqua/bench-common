@@ -219,8 +219,11 @@ func multiWordReplace(s string, subname string, sub string) string {
 func preetyMapPrint(values []map[string]interface{}) string {
 	a := ""
 	for _, value := range values{
-		for k, v := range value {
-			a += fmt.Sprintf("\t %s: %s\n", k, v)
+		if value != nil{
+			for k, v := range value {
+				a += fmt.Sprintf("\t %s: %s", k, v)
+			}
+			a += "\n"
 		}
 	}
 

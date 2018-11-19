@@ -20,6 +20,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"reflect"
 )
 
 type binOp string
@@ -54,30 +55,32 @@ type testOutput struct {
 }
 
 func (t *testItem) execute(s string) *testOutput {
-	result := &testOutput{TestResult: true, ActualResult:[]map[string]interface{}{}}
+	result := &testOutput{TestResult: true, ActualResult: []map[string]interface{}{}}
 
 	s = strings.TrimRight(s, " \n")
-	if t.Set {
-		if t.Compare.Op != "" {
-			values := strings.Split(s, "\n")
-			testResult := false
+	flagReg := regexp.MustCompile(t.Flag)
 
-			for _, v := range values {
-				flagVal := getFlagValue(v, t.Flag)
-				testResult = eval(t.Compare.Op, flagVal, t.Compare.Value)
+	// If the test should run on multipul values - if the flag occures more than once (Containers, Images, etc)
+	if len(flagReg.FindAllStringIndex(s, -1)) > 1 {
+		values := strings.Split(s, "\n")
+		testResult := true
 
-				if !testResult {
-					result.TestResult = false
-					result.ActualResult = append(result.ActualResult, parseOutput(v))
-				}
+		for _, v := range values {
+			testResult = t.evalTestResult(v)
+
+			if !testResult {
+				result.TestResult = false
+				result.ActualResult = smartAppend(result.ActualResult, parseActualResult(v, t.Flag, t.Set))
 			}
-		} else {
-			result.TestResult, _ = regexp.MatchString(t.Flag+`(?:[^a-zA-Z0-9-_]|$)`, s)
 		}
 	} else {
-		r, _ := regexp.MatchString(t.Flag+`(?:[^a-zA-Z0-9-_]|$)`, s)
-		result.TestResult = !r
+		result.TestResult = t.evalTestResult(s)
+
+		if !result.TestResult && len(s) > 0 {
+			result.ActualResult = smartAppend(result.ActualResult, parseActualResult(s, t.Flag, t.Set))
+		}
 	}
+
 	return result
 }
 
@@ -97,7 +100,7 @@ func (ts *Tests) Execute(s string) *testOutput {
 
 	for i, t := range ts.TestItems {
 		res[i] = *(t.execute(s))
-		actualResult = append(actualResult, res[i].ActualResult...)
+		actualResult = smartAppend(actualResult, res[i].ActualResult...)
 	}
 
 	// If no binary operation is specified, default to AND
@@ -177,6 +180,24 @@ func eval(compareOp, flagVal, compareValue string) bool {
 
 }
 
+func smartAppend(arr []map[string]interface{}, elements ...map[string]interface{}) []map[string]interface{}{
+	for _, element := range elements{
+		isElemExists := false
+		for _, obj := range arr {
+			if reflect.DeepEqual(obj, element) {
+				isElemExists = true
+				break
+			}
+		}
+
+		if !isElemExists {
+			arr = append(arr, element)
+		}
+	}
+
+	return arr
+}
+
 func toNumeric(a, b string) (c, d int, err error) {
 	if len(a) == 0 || len(b) == 0 {
 		return -1, -1, fmt.Errorf("Cannot convert blank value to numeric")
@@ -198,7 +219,8 @@ func toNumeric(a, b string) (c, d int, err error) {
 func getFlagValue(s, flag string) string {
 	var flagVal string
 	pttns := []string{
-		flag + `=([^ \n]*)`,
+		flag + `=([^ \n]*[a-zA-Z0-9])`,
+		flag + `:([^ \n]*[a-zA-Z0-9])`,
 		flag + ` +([^- ]+)`,
 		`(?:^| +)` + `(` + flag + `)` + `(?: |$)`,
 	}
@@ -218,25 +240,47 @@ func getFlagValue(s, flag string) string {
 	return flagVal
 }
 
-func parseOutput(s string) map[string]interface{} {
+func parseActualResult(s, flag string, set bool) map[string]interface{} {
+	if !strings.Contains(s, "$$"){
+		flagVal := getFlagValue(s, flag)
+		if len(flagVal) > 0 {
+			return map[string]interface{}{"Raw": flagVal}
+		}
+		return nil
+	}
+
 	a := map[string]interface{}{}
-	abs := strings.Split(s, ":")
+	abs := strings.Split(s, (":"))
 	values := strings.Split(abs[0], ",")
 
 	for _, value := range values {
 		arguments := strings.Split(value, "$$")
 
 		if len(arguments) > 1 {
-
 			if arguments[0] == "Id" {
 				arguments[1] = arguments[1][:5]
 			}
 
 			a[arguments[0]] = arguments[1]
-		} else {
+		} else if len(value) > 0{
 			a["Raw"] = value
 		}
 	}
 
 	return a
+}
+
+func (t *testItem) evalTestResult(s string) bool{
+	if t.Set {
+		if t.Compare.Op != "" {
+			flagVal := getFlagValue(s, t.Flag)
+			return eval(t.Compare.Op, flagVal, t.Compare.Value)
+		} else {
+			r, _ := regexp.MatchString(t.Flag+`(?:[^a-zA-Z0-9-_]|$)`, s)
+			return r
+		}
+	} else {
+		r, _ := regexp.MatchString(t.Flag+`(?:[^a-zA-Z0-9-_]|$)`, s)
+		return !r
+	}
 }

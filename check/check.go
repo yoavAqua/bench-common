@@ -170,7 +170,11 @@ func (c *Check) Run() {
 		if finalOutput.TestResult {
 			c.State = PASS
 		} else {
-			c.State = FAIL
+			if strings.Contains(c.Description, "(Not Scored)") {
+				c.State = WARN
+			} else {
+				c.State = FAIL
+			}
 		}
 	} else {
 		c.State = WARN
