@@ -16,6 +16,7 @@ package util
 
 import (
 	"fmt"
+	"github.com/aquasecurity/bench-common/auditeval"
 	"os"
 	"os/exec"
 	"regexp"
@@ -94,8 +95,12 @@ func PrettyPrint(r *check.Controls, summary check.Summary, noRemediations bool) 
 			colorPrint(c.State, fmt.Sprintf("%s %s\n", c.ID, c.Description))
 
 			if c.State == check.FAIL {
-				fmt.Println("\t", c.FailedDescription)
-				fmt.Println("", preetyMapPrint(c.ActualValue))
+				if len(c.ActualValue) == 0 {
+					fmt.Println("\t", c.FailedDescription)
+				} else {
+					PrintAttributes(c.ActualValue)
+				}
+				fmt.Println()
 			}
 		}
 	}
@@ -103,7 +108,7 @@ func PrettyPrint(r *check.Controls, summary check.Summary, noRemediations bool) 
 	fmt.Println()
 
 	// Print remediations.
-	if  !noRemediations && (summary.Fail > 0 || summary.Warn > 0) {
+	if !noRemediations && (summary.Fail > 0 || summary.Warn > 0) {
 		colors[check.WARN].Printf("== Remediations ==\n")
 		for _, g := range r.Groups {
 			for _, c := range g.Checks {
@@ -216,16 +221,12 @@ func multiWordReplace(s string, subname string, sub string) string {
 	return strings.Replace(s, subname, sub, -1)
 }
 
-func preetyMapPrint(values []map[string]interface{}) string {
-	a := ""
-	for _, value := range values{
-		if value != nil{
-			for k, v := range value {
-				a += fmt.Sprintf("\t %s: %s", k, v)
-			}
-			a += "\n"
+func PrintAttributes(values []auditeval.Attributes) {
+	for _, attributes := range values {
+		for _, attribute := range attributes {
+			attribute.Print()
 		}
-	}
 
-	return a
+		fmt.Println()
+	}
 }

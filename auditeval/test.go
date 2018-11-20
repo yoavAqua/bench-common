@@ -17,10 +17,10 @@ package auditeval
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
-	"reflect"
 )
 
 type binOp string
@@ -51,16 +51,27 @@ type compare struct {
 
 type testOutput struct {
 	TestResult   bool
-	ActualResult []map[string]interface{}
+	ActualResult []Attributes
 }
 
+type Attribute struct {
+	Name  string
+	Value interface{}
+}
+
+func (a *Attribute) Print() {
+	fmt.Printf("\t%s: %v", a.Name, a.Value)
+}
+
+type Attributes []Attribute
+
 func (t *testItem) execute(s string) *testOutput {
-	result := &testOutput{TestResult: true, ActualResult: []map[string]interface{}{}}
+	result := &testOutput{TestResult: true, ActualResult: []Attributes{}}
 
 	s = strings.TrimRight(s, " \n")
 	flagReg := regexp.MustCompile(t.Flag)
 
-	// If the test should run on multipul values - if the flag occures more than once (Containers, Images, etc)
+	// If the test should run on multipul values - Meaning if the flag occures more than once (Containers, Images, etc)
 	if len(flagReg.FindAllStringIndex(s, -1)) > 1 {
 		values := strings.Split(s, "\n")
 		testResult := true
@@ -70,14 +81,14 @@ func (t *testItem) execute(s string) *testOutput {
 
 			if !testResult {
 				result.TestResult = false
-				result.ActualResult = smartAppend(result.ActualResult, parseActualResult(v, t.Flag, t.Set))
+				result.ActualResult = smartAppend(result.ActualResult, parseActualResult(v, t.Flag))
 			}
 		}
 	} else {
 		result.TestResult = t.evalTestResult(s)
 
 		if !result.TestResult && len(s) > 0 {
-			result.ActualResult = smartAppend(result.ActualResult, parseActualResult(s, t.Flag, t.Set))
+			result.ActualResult = smartAppend(result.ActualResult, parseActualResult(s, t.Flag))
 		}
 	}
 
@@ -85,7 +96,7 @@ func (t *testItem) execute(s string) *testOutput {
 }
 
 func (ts *Tests) Execute(s string) *testOutput {
-	finalOutput := &testOutput{}
+	finalOutput := &testOutput{ActualResult: []Attributes{}}
 	var result bool
 	if ts == nil {
 		return finalOutput
@@ -96,7 +107,7 @@ func (ts *Tests) Execute(s string) *testOutput {
 		return finalOutput
 	}
 
-	actualResult := []map[string]interface{}{}
+	actualResult := []Attributes{}
 
 	for i, t := range ts.TestItems {
 		res[i] = *(t.execute(s))
@@ -180,8 +191,13 @@ func eval(compareOp, flagVal, compareValue string) bool {
 
 }
 
-func smartAppend(arr []map[string]interface{}, elements ...map[string]interface{}) []map[string]interface{}{
-	for _, element := range elements{
+// Append elements to an array only if they don't exists in it
+func smartAppend(arr []Attributes, elements ...Attributes) []Attributes {
+	for _, element := range elements {
+		if element == nil {
+			continue
+		}
+
 		isElemExists := false
 		for _, obj := range arr {
 			if reflect.DeepEqual(obj, element) {
@@ -240,37 +256,7 @@ func getFlagValue(s, flag string) string {
 	return flagVal
 }
 
-func parseActualResult(s, flag string, set bool) map[string]interface{} {
-	if !strings.Contains(s, "$$"){
-		flagVal := getFlagValue(s, flag)
-		if len(flagVal) > 0 {
-			return map[string]interface{}{"Raw": flagVal}
-		}
-		return nil
-	}
-
-	a := map[string]interface{}{}
-	abs := strings.Split(s, (":"))
-	values := strings.Split(abs[0], ",")
-
-	for _, value := range values {
-		arguments := strings.Split(value, "$$")
-
-		if len(arguments) > 1 {
-			if arguments[0] == "Id" {
-				arguments[1] = arguments[1][:5]
-			}
-
-			a[arguments[0]] = arguments[1]
-		} else if len(value) > 0{
-			a["Raw"] = value
-		}
-	}
-
-	return a
-}
-
-func (t *testItem) evalTestResult(s string) bool{
+func (t *testItem) evalTestResult(s string) bool {
 	if t.Set {
 		if t.Compare.Op != "" {
 			flagVal := getFlagValue(s, t.Flag)
@@ -283,4 +269,38 @@ func (t *testItem) evalTestResult(s string) bool{
 		r, _ := regexp.MatchString(t.Flag+`(?:[^a-zA-Z0-9-_]|$)`, s)
 		return !r
 	}
+}
+
+func parseActualResult(s, flag string) (res Attributes) {
+	// If there is no parsing to be done, return the entire string as raw string
+	if !strings.Contains(s, "$$") {
+		flagVal := getFlagValue(s, flag)
+		if len(flagVal) > 0 {
+			return Attributes{{"Raw", flagVal}}
+		}
+		return nil
+	}
+
+	// Discard the string after the delimiter, and split the output to attributes by the delimiter ','
+	delimiterIndex := strings.Index(s, ":")
+	values := strings.Split(s[:delimiterIndex], ",")
+
+	for _, value := range values {
+		attrs := strings.Split(value, "$$")
+
+		// If there was at least one match of $$
+		if len(attrs) > 1 {
+			// If the attribute is Id, cut the id to be first 12 digits
+			if attrs[0] == "Id" {
+				attrs[1] = attrs[1][:12]
+			}
+
+			res = append(res, Attribute{Name: attrs[0], Value: attrs[1]})
+
+		} else if len(value) == 1 {
+			res = append(res, Attribute{Name: "Raw", Value: attrs[0]})
+		}
+	}
+
+	return res
 }

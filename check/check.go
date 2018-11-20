@@ -50,6 +50,7 @@ func handleError(err error, context string) (errmsg string) {
 // Check contains information about a recommendation.
 type Check struct {
 	ID                string           `yaml:"id" json:"test_number"`
+	Scored            bool             `yaml:"scored" json:"scored"`
 	Description       string           `json:"test_desc"`
 	Audit             string           `json:"omit"`
 	Type              string           `json:"type"`
@@ -59,8 +60,8 @@ type Check struct {
 	Remediation       string           `json:"-"`
 	TestInfo          []string         `json:"test_info"`
 	State             `json:"status"`
-	ActualValue       []map[string]interface{} `json:"actual_value"`
-	FailedDescription string                   `yaml:"failed_description" json:"failed_description"`
+	ActualValue       []auditeval.Attributes `json:"actual_value"`
+	FailedDescription string                 `yaml:"failed_description" json:"failed_description"`
 }
 
 // Group is a collection of similar checks.
@@ -170,10 +171,10 @@ func (c *Check) Run() {
 		if finalOutput.TestResult {
 			c.State = PASS
 		} else {
-			if strings.Contains(c.Description, "(Not Scored)") {
-				c.State = WARN
-			} else {
+			if c.Scored {
 				c.State = FAIL
+			} else {
+				c.State = WARN
 			}
 		}
 	} else {
