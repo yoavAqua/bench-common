@@ -56,7 +56,7 @@ type testOutput struct {
 
 type Attribute struct {
 	Name  string
-	Value interface{}
+	Value string
 }
 
 func (a *Attribute) Print() {
@@ -71,10 +71,10 @@ func (t *testItem) execute(s string) *testOutput {
 	s = strings.TrimRight(s, " \n")
 	flagReg := regexp.MustCompile(t.Flag)
 
-	// If the test should run on multipul values - Meaning if the flag occures more than once (Containers, Images, etc)
+	// If the test should run on multiple values - Meaning if the flag occures more than once (Containers, Images, etc)
 	if len(flagReg.FindAllStringIndex(s, -1)) > 1 {
 		values := strings.Split(s, "\n")
-		testResult := true
+		var testResult bool
 
 		for _, v := range values {
 			testResult = t.evalTestResult(v)

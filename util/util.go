@@ -87,7 +87,7 @@ func colorPrint(state check.State, s string) {
 }
 
 // prettyPrint outputs the results to stdout in human-readable format
-func PrettyPrint(r *check.Controls, summary check.Summary, noRemediations bool) {
+func PrettyPrint(r *check.Controls, summary check.Summary, showRemediations bool) {
 	colorPrint(check.INFO, fmt.Sprintf("%s %s\n", r.ID, r.Description))
 	for _, g := range r.Groups {
 		colorPrint(check.INFO, fmt.Sprintf("%s %s\n", g.ID, g.Description))
@@ -108,7 +108,7 @@ func PrettyPrint(r *check.Controls, summary check.Summary, noRemediations bool) 
 	fmt.Println()
 
 	// Print remediations.
-	if !noRemediations && (summary.Fail > 0 || summary.Warn > 0) {
+	if showRemediations && (summary.Fail > 0 || summary.Warn > 0) {
 		colors[check.WARN].Printf("== Remediations ==\n")
 		for _, g := range r.Groups {
 			for _, c := range g.Checks {
